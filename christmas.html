@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Happy Christmas — Enter your name</title>
+  <link href="https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@400;700&family=Montserrat:wght@300;600&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg1:#0f172a;--bg2:#022b3a;--card:#0b1220;--accent:#ffcc00}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;display:grid;place-items:center;background:linear-gradient(180deg,var(--bg1),var(--bg2));font-family:Montserrat,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
+
+    .scene{width:100%;max-width:820px;padding:32px;position:relative;overflow:hidden}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01));border-radius:18px;padding:36px;text-align:center;box-shadow:0 10px 30px rgba(2,6,23,0.6);backdrop-filter:blur(4px)}
+
+    h1{font-family:'Mountains of Christmas',cursive;color:var(--accent);font-size:48px;margin:0 0 8px}
+    p.lead{color:#cfe8ff;margin:0 0 18px;font-size:16px}
+
+    .form{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+    input[type=text]{padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);min-width:220px;font-size:16px;background:rgba(255,255,255,0.02);color:#fff;outline:none}
+    input[type=text]::placeholder{color:rgba(255,255,255,0.4)}
+    button{padding:12px 18px;border-radius:10px;border:none;background:var(--accent);color:#111;font-weight:700;cursor:pointer}
+
+    .greeting{margin-top:26px;font-size:28px;color:#fff;min-height:42px}
+    .sub{margin-top:10px;color:rgba(255,255,255,0.65)}
+
+    /* Snow container */
+    .snow{pointer-events:none;position:absolute;left:0;top:0;width:100%;height:100%;overflow:hidden}
+    .snowflake{position:absolute;top:-10vh;font-size:18px;opacity:0.9;will-change:transform,opacity}
+
+    @keyframes fall{
+      0%{transform:translateY(-10vh) translateX(0) rotate(0deg);opacity:0}
+      10%{opacity:0.9}
+      100%{transform:translateY(120vh) translateX(200px) rotate(360deg);opacity:0.8}
+    }
+
+    /* Responsive tweaks */
+    @media (max-width:520px){h1{font-size:36px} .card{padding:20px} input[type=text]{min-width:160px}}
+
+    /* small sparkle around greeting */
+    .shine{position:relative;display:inline-block}
+    .shine::after{content:'';position:absolute;left:-8px;top:-8px;width:calc(100% + 16px);height:calc(100% + 16px);border-radius:14px;box-shadow:0 0 40px 8px rgba(255,204,0,0.08);opacity:0;transition:opacity .35s}
+    .shine.visible::after{opacity:1}
+
+  </style>
+</head>
+<body>
+  <main class="scene">
+    <div class="card">
+      <h1>Happy Christmas</h1>
+      <p class="lead">Type your name below and press <strong>Show</strong> — the page will greet you with snow ✨</p>
+
+      <form id="nameForm" class="form" onsubmit="return false;">
+        <input id="nameInput" type="text" placeholder="Enter your name..." maxlength="30" autocomplete="off" />
+        <button id="showBtn">Show</button>
+      </form>
+
+      <div id="greeting" class="greeting" aria-live="polite"></div>
+      <div class="sub">Click the button or press Enter. Refresh to reset.</div>
+    </div>
+
+    <div id="snow" class="snow" aria-hidden="true"></div>
+  </main>
+
+  <script>
+    const form = document.getElementById('nameForm');
+    const input = document.getElementById('nameInput');
+    const greeting = document.getElementById('greeting');
+    const snow = document.getElementById('snow');
+    const showBtn = document.getElementById('showBtn');
+
+    function sanitizeName(name){
+      // keep it simple and safe
+      return name.replace(/[<>"'\\]/g, '').trim();
+    }
+
+    function showGreeting(){
+      const raw = input.value || '';
+      const name = sanitizeName(raw) || 'Friend';
+      greeting.innerHTML = `<span class="shine visible">🎄 Happy Christmas, ${escapeHtml(name)}! ❄️</span>`;
+      startSnow();
+    }
+
+    function escapeHtml(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    showBtn.addEventListener('click', showGreeting);
+    input.addEventListener('keydown', e=>{ if(e.key === 'Enter'){ e.preventDefault(); showGreeting(); } });
+
+    /* Snow generator */
+    let snowStarted = false;
+    function startSnow(){
+      if(snowStarted) return; snowStarted = true;
+      const flakes = 60; // number of flakes
+      const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+      for(let i=0;i<flakes;i++){
+        const el = document.createElement('div');
+        el.className = 'snowflake';
+        // Use different snow characters for variety
+        const chars = ['❄','❅','✻','❆'];
+        el.textContent = chars[Math.floor(Math.random()*chars.length)];
+        // random size
+        const size = Math.random()*18 + 8; el.style.fontSize = size + 'px';
+        // start horizontal position
+        el.style.left = (Math.random()*100) + '%';
+        // animation duration & delay
+        const dur = Math.random()*10 + 8; // 8-18s
+        const delay = Math.random()*5;
+        el.style.animation = `fall ${dur}s linear ${delay}s infinite`;
+        // varying opacity
+        el.style.opacity = 0.6 + Math.random()*0.4;
+        // slight horizontal drift by using transform on animation end
+        el.style.setProperty('--drift', (Math.random()*200 - 100) + 'px');
+        // small left offset using transform-origin trick
+        el.style.left = Math.random()*100 + '%';
+        snow.appendChild(el);
+      }
+
+      // add subtle parallax on mouse move
+      document.addEventListener('mousemove', e=>{
+        const cx = e.clientX / window.innerWidth - 0.5;
+        snow.style.transform = `translateX(${cx*10}px)`;
+      });
+    }
+
+    // accessibility: announce initial focus
+    input.focus();
+  </script>
+</body>
+</html>
